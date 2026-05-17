@@ -16,7 +16,7 @@ limitations under the License.
 
 import FormalConjectures.Util.ProblemImports
 
-/-!
+/-
 # Existence And Smoothness Of The Navier–Stokes Equation
 
 This file formalizes the Clay Mathematics Institute millennium problem concerning
@@ -59,6 +59,11 @@ open scoped Laplacian
 namespace NavierStokes
 
 variable {n : ℕ}
+
+/-- The Clay Navier–Stokes time domain $[0, \infty)$.
+Fefferman p.1 l.5 ("$t \ge 0$"); eqs. (1)/(2) parentheticals
+-/
+def TimeDomain : Set ℝ := Set.Ici 0
 
 /--
 The divergence $\nabla \cdot v$ of a vector field $v : \mathbb{R}^n \to \mathbb{R}^n$
@@ -179,7 +184,7 @@ structure ForceConditionDecay (f : ℝ^n → ℝ → ℝ^n) : Prop extends Force
   For any derivative order $m$ and any decay rate $K$, there exists $C$ such that
   $\lVert \partial^m_{x,t} f(x,t) \rVert \le C/(1+\lVert x \rVert+t)^K$ for
   $t \ge 0$. -/
-  decay : ∀ m : ℕ, ∀ K : ℝ, ∃ C : ℝ, ∀ x, ∀ t ≥ 0,
+  decay : ∀ m : ℕ, ∀ K : ℝ, ∃ C : ℝ, ∀ x, ∀ t ∈ TimeDomain,
     ‖iteratedFDerivWithin ℝ m (↿f) (Set.univ ×ˢ Set.Ici 0) (x, t)‖ ≤ C / (1 + ‖x‖ + t) ^ K
 
 /--
@@ -191,9 +196,9 @@ The force must be smooth, 1-periodic in space, and decay in time
 -/
 structure ForceConditionPeriodic (f : ℝ^n → ℝ → ℝ^n) : Prop extends ForceCondition f where
   /-- The force is 1-periodic in space for all times $t \ge 0$ (condition 8, part 1). -/
-  isOnePeriodic : ∀ t ≥ 0, IsOnePeriodic (f · t)
+  isOnePeriodic : ∀ t ∈ TimeDomain, IsOnePeriodic (f · t)
   /-- All derivatives of f decay faster than any polynomial in time (condition 9). -/
-  decay : ∀ m : ℕ, ∀ K : ℝ, ∃ C : ℝ, ∀ x, ∀ t ≥ 0,
+  decay : ∀ m : ℕ, ∀ K : ℝ, ∃ C : ℝ, ∀ x, ∀ t ∈ TimeDomain,
     ‖iteratedFDerivWithin ℝ m (↿f) (Set.univ ×ˢ Set.Ici 0) (x, t)‖ ≤ C / (1 + t) ^ K
 
 /--
@@ -211,12 +216,12 @@ structure NavierStokesExistenceAndSmoothness
     (v : ℝ^n → ℝ → ℝ^n) (p : ℝ^n → ℝ → ℝ) : Prop where
   /-- The Navier-Stokes equation (equation 1):
   $\partial v/\partial t + (v \cdot \nabla)v = \nu\Delta v - \nabla p + f$. -/
-  navier_stokes : ∀ x, ∀ t ≥ 0,
+  navier_stokes : ∀ x, ∀ t ∈ TimeDomain,
     derivWithin (v x ·) (Set.Ici 0) t + fderiv ℝ (v · t) x (v x t) =
       nu • Δ (v · t) x - gradient (p · t) x + f x t
   /-- Incompressibility constraint (equation 2): $\nabla \cdot v = 0$ for all
   $x$ and $t \ge 0$. -/
-  div_free : ∀ x, ∀ t ≥ 0, ∇⬝ (v · t) x = 0
+  div_free : ∀ x, ∀ t ∈ TimeDomain, ∇⬝ (v · t) x = 0
   /-- Initial condition (equation 3): $v(x,0) = u_0(x)$ for all $x$. -/
   initial_condition : ∀ x, v x 0 = u₀ x
   /-- The velocity field is smooth ($C^\infty$) on $\mathbb{R}^n \times [0,\infty)$
@@ -239,10 +244,10 @@ structure NavierStokesExistenceAndSmoothnessRn
     (v : ℝ^n → ℝ → ℝ^n) (p : ℝ^n → ℝ → ℝ) : Prop
   extends NavierStokesExistenceAndSmoothness nu u₀ f v p where
   /-- The velocity is square-integrable at each time $t \ge 0$ (condition 7). -/
-  integrable : ∀ t ≥ 0, MemLp (‖v · t‖) 2
+  integrable : ∀ t ∈ TimeDomain, MemLp (‖v · t‖) 2
   /-- The kinetic energy $\int \lVert v(x,t) \rVert^2\,dx$ remains uniformly bounded
   for all time (condition 7), where the integral is the Lebesgue integral. -/
-  globally_bounded_energy : ∃ E, ∀ t ≥ 0, (∫ x : ℝ^n, ‖v x t‖ ^ 2) < E
+  globally_bounded_energy : ∃ E, ∀ t ∈ TimeDomain, (∫ x : ℝ^n, ‖v x t‖ ^ 2) < E
 
 /--
 A solution to the Navier-Stokes equations on the $n$-torus $\mathbb{R}^n/\mathbb{Z}^n$.
@@ -256,9 +261,9 @@ structure NavierStokesExistenceAndSmoothnessPeriodic
     (v : ℝ^n → ℝ → ℝ^n) (p : ℝ^n → ℝ → ℝ) : Prop
   extends NavierStokesExistenceAndSmoothness nu u₀ f v p where
   /-- The velocity is 1-periodic in space for all times $t \ge 0$ (condition 10). -/
-  isOnePeriodic_velocity : ∀ t ≥ 0, IsOnePeriodic (v · t)
+  isOnePeriodic_velocity : ∀ t ∈ TimeDomain, IsOnePeriodic (v · t)
   /-- The pressure is 1-periodic in space for all times $t \ge 0$ (Clay errata). -/
-  isOnePeriodic_pressure : ∀ t ≥ 0, IsOnePeriodic (p · t)
+  isOnePeriodic_pressure : ∀ t ∈ TimeDomain, IsOnePeriodic (p · t)
 
 
 /-- (A) Existence and smoothness of Navier–Stokes solutions on ℝ³. -/
